@@ -1,302 +1,195 @@
 package amap.android_multiple_infowindows;
 
-import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.database.sqlite.SQLiteDatabase;
+import android.content.ComponentName;
+import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.view.View;
-import android.view.animation.LinearInterpolator;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+
+import com.amap.api.location.AMapLocation;
 
 import com.amap.api.maps.AMap;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.MapView;
 import com.amap.api.maps.model.BitmapDescriptor;
 import com.amap.api.maps.model.BitmapDescriptorFactory;
+import com.amap.api.maps.model.CircleOptions;
 import com.amap.api.maps.model.LatLng;
+
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+
+import com.amap.api.location.AMapLocation;
+import com.amap.api.location.AMapLocationClient;
+import com.amap.api.location.AMapLocationClientOption;
+import com.amap.api.location.AMapLocationClientOption.AMapLocationMode;
+import com.amap.api.location.AMapLocationClientOption.AMapLocationProtocol;
+import com.amap.api.location.AMapLocationListener;
+import com.amap.api.maps.LocationSource;
+import com.amap.api.maps.model.LatLngBounds;
+import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
-import com.amap.api.maps.model.animation.Animation;
-import com.amap.api.maps.model.animation.RotateAnimation;
-import com.amap.api.services.core.LatLonPoint;
-import com.amap.api.services.core.PoiItem;
-import com.amap.api.services.poisearch.PoiResult;
-import com.amap.api.services.poisearch.PoiSearch;
-import java.sql.Connection;
-import java.sql.*;
 
 
-import java.util.HashMap;
-import java.util.List;
-
-import overlay.PoiOverlay;
-
-import static java.sql.DriverManager.println;
-
-public class MainActivity extends Activity implements PoiSearch.OnPoiSearchListener {
+public class MainActivity extends AppCompatActivity
+        implements
+        AMapLocationListener, LocationSource, AMap.OnMapClickListener {
     private AMap aMap;
     private MapView mapView;
     private LatLng centerpoint1;
-    private LatLng centerpoint2;
-    private LatLng centerpoint3;
-    private LatLng centerpoint4;
+    private OnLocationChangedListener mListener;
+    private RadioGroup rg_mainBottom;
+    private RadioButton rb_mainBottom_mine;
 
-    private ViewPoiOverlay poiOverlay;
-    private LatLng position;
+    //声明mlocationClient对象
+    public AMapLocationClient mlocationClient;
+    //声明mLocationOption对象
+    public AMapLocationClientOption mLocationOption = null;
 
-    private TextView tv_data;
+    // 中心点marker
+    private Marker centerMarker;
+    private BitmapDescriptor ICON_YELLOW = BitmapDescriptorFactory
+            .defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
+    private BitmapDescriptor ICON_RED = BitmapDescriptorFactory
+            .defaultMarker(BitmapDescriptorFactory.HUE_RED);
+    private MarkerOptions markerOption = null;
+    // 中心点坐标
+    private LatLng centerLatLng = null;
 
-    @SuppressLint("HandlerLeak")
-    private Handler handler = new Handler(){
-        @Override
-        public void handleMessage(Message msg) {
 
-            switch (msg.what){
-                case 0x11:
-                    String s = (String) msg.obj;
-                    tv_data.setText(s);
-                    break;
-                case 0x12:
-                    String ss = (String) msg.obj;
-                    tv_data.setText(ss);
-                    break;
-            }
+    // 当前的坐标点集合，主要用于进行地图的可视区域的缩放
+    LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
 
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        /*
-         * 设置离线地图存储目录，在下载离线地图或初始化地图设置;
-         * 使用过程中可自行设置, 若自行设置了离线地图存储的路径，
-         * 则需要在离线地图下载和使用地图页面都进行路径设置
-         * */
-        //Demo中为了其他界面可以使用下载的离线地图，使用默认位置存储，屏蔽了自定义设置
-        // MapsInitializer.sdcardDir =OffLineMapUtils.getSdCacheDir(this);
         mapView = (MapView) findViewById(R.id.map);
         mapView.onCreate(savedInstanceState);// 此方法必须重写
-        init();
-        doPOISearch();
-    }
-
-    private void LoadParaFromDB() {
-
-        centerpoint1 = new LatLng(39.983178,114.464348);
-        centerpoint2 = new LatLng(37.983178,116.464348);
-        centerpoint3 = new LatLng(40.983178,120.464348);
-        centerpoint4 = new LatLng(36.983178,110.464348);
 
 
-    }
+        // 此方法为每隔固定时间会发起一次定位请求，为了减少电量消耗或网络流量消耗，
+        // 注意设置合适的定位时间的间隔（最小间隔支持为1000ms），并且在合适时间调用stopLocation()方法来取消定位请求
+        // 在定位结束后，在合适的生命周期调用onDestroy()方法
+        // 在单次定位情况下，定位无论成功与否，都无需调用stopLocation()方法移除请求，定位sdk内部会移除
+        //启动定位
+        aMap = mapView.getMap();
+        aMap.setLocationSource(MainActivity.this);
+        aMap.setMyLocationEnabled(true);
+        aMap.getUiSettings().setMyLocationButtonEnabled(true);
+        aMap.setMyLocationType(AMap.LOCATION_TYPE_LOCATE);
 
-    private void doPOISearch() {
+        rg_mainBottom = (RadioGroup) findViewById(R.id.radioGroupMainBottom);
+        rb_mainBottom_mine = (RadioButton) findViewById(R.id.radio_mine);
+        //注意是给RadioGroup绑定监视器
+        rg_mainBottom.setOnCheckedChangeListener(new MyRadioButtonListener() );
 
-        connectDB();
-
-        addMarker(centerpoint1, "Beef");
-        addMarker(centerpoint2, "Chicken");
-        addMarker(centerpoint3, "Rice");
-        addMarker(centerpoint4, "Sara");
-
-
-
-        /*
-        PoiSearch.Query query = new PoiSearch.Query("公园","110101","成都");
-        query.setPageSize(10);// 设置每页最多返回多少条poiitem
-        query.setPageNum(1);
-        query.requireSubPois(true);
-        PoiSearch poiSearch = new PoiSearch(this,query);
-        poiSearch.setOnPoiSearchListener(this);
-        poiSearch.setBound(new PoiSearch.SearchBound(centerpoint1, 5000, true));//
-        // 设置搜索区域为以lp点为圆心，其周围5000米范围
-        poiSearch.searchPOIAsyn();// 异步搜索
-        */
-    }
-
-    private void setStyle() {
-
-    }
-
-    private void connectDB() {
-
-        HashMap<String, Object> map = DBUtil.getInfoByName("1");
-
-        if(map != null){
-            String s = "";
-            for (String key : map.keySet()){
-                s += key + ":" + map.get(key) + "\n";
-                Toast.makeText(getApplicationContext(), s, Toast.LENGTH_LONG);
-                println(s);
-            }
-            //message.what = 0x12;
-            //message.obj = s;
-        }else {
-            Toast.makeText(getApplicationContext(),"error: 查询结果为空", Toast.LENGTH_SHORT);
-            println("error");
-        }
-        /*
-        // 创建一个线程来连接数据库并获取数据库中对应表的数据
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                // 调用数据库工具类DBUtils的getInfoByName方法获取数据库表中数据
-                HashMap<String, Object> map1 = DBUtil.getInfoByName("1");
-                HashMap<String, Object> map2 = DBUtil.getInfoByName("2");
-
-                if(!map1.isEmpty() && !map2.isEmpty())
-                {
-
-                }
-                /*
-                Message message = handler.obtainMessage();
-                if(map != null){
-                    String s = "";
-                    for (String key : map.keySet()){
-                        s += key + ":" + map.get(key) + "\n";
-                    }
-                    message.what = 0x12;
-                    message.obj = s;
-                }else {
-                    message.what = 0x11;
-                    message.obj = "查询结果为空";
-                }
-                // 发消息通知主线程更新UI
-                handler.sendMessage(message);
-
-            }
-        }).start();
-        */
-
-    }
-
-    private void init() {
-        if (aMap == null) {
-            aMap = mapView.getMap();
-        }
-
-        LoadParaFromDB();
-
-        aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(centerpoint1,13));
-        aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(centerpoint2,13));
-        aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(centerpoint3,13));
-        aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(centerpoint4,13));
-    }
-
-    private void addMarker(LatLng position, String title) {
-        this.position = position;
-        if (position != null){
-            //初始化marker内容
-            MarkerOptions markerOptions = new MarkerOptions();
-            //这里很简单就加了一个TextView，根据需求可以加载复杂的View
-            View view = View.inflate(this, R.layout.custom_view, null);
-            TextView textView = ((TextView) view.findViewById(R.id.title));
-            textView.setText(title);
-            BitmapDescriptor markerIcon = BitmapDescriptorFactory.fromView(view);
-            markerOptions.position(position).icon(markerIcon);
-            markerOptions.setFlat(true);//设置marker平贴地图效果
-            markerOptions.draggable(true);
-            Animation animation = new RotateAnimation(markerOptions.getRotateAngle(),markerOptions.getRotateAngle()+180,0,0,0);
-            long duration = 1000L;
-            animation.setDuration(duration);
-            animation.setInterpolator(new LinearInterpolator());
-
-            aMap.addMarker(markerOptions);
-            aMap.addMarker(markerOptions).setAnimation(animation);
-            aMap.addMarker(markerOptions).startAnimation();
-        }
-    }
-
-    //搜索返回结果回调
-    @Override
-    public void onPoiSearched(PoiResult poiResult, int errorCode) {
-        if (errorCode == 1000) {
-            if (poiResult != null && poiResult.getQuery() != null) {
-
-                List<PoiItem> poiItems = poiResult.getPois();
-                if (poiItems != null && poiItems.size() > 0) {
-                    aMap.clear();// 清理之前的图标
-                    poiOverlay = new ViewPoiOverlay(aMap, poiItems);
-                    poiOverlay.removeFromMap();
-                    poiOverlay.addToMap();
-                    poiOverlay.zoomToSpan();
-                } else {
-                    Toast.makeText(MainActivity.this, "无搜索结果", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(MainActivity.this, "无搜索结果", Toast.LENGTH_SHORT).show();
-            }
-        }
+        aMap.setOnMapClickListener(MainActivity.this);
+        markerOption = new MarkerOptions().draggable(true);
     }
 
     @Override
-    public void onPoiItemSearched(PoiItem poiItem, int i) {
+    public void onMapClick(LatLng latLng) {
+        markerOption.icon(ICON_YELLOW);
+        centerLatLng = latLng;
+        addCenterMarker(centerLatLng);
+        System.out.println("center point" + centerLatLng.latitude+ "-----" + centerLatLng.longitude);
+        //drawCircle(centerLatLng);
+    }
+    private void addCenterMarker(LatLng latlng) {
+        if(null == centerMarker){
+            centerMarker = aMap.addMarker(markerOption);
+        }
+        centerMarker.setPosition(latlng);
+        centerMarker.setVisible(true);
+    }
+    private void drawCircle(LatLng centerPoint) {
+        // 绘制一个圆形
+        aMap.addCircle(new CircleOptions().center(centerPoint)
+                .radius(100).strokeColor(Const.STROKE_COLOR)
+                .fillColor(Const.FILL_COLOR).strokeWidth(Const.STROKE_WIDTH));
+        boundsBuilder.include(centerPoint);
+
+        // 设置所有maker显示在当前可视区域地图中
+        LatLngBounds bounds = boundsBuilder.build();
+        aMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
 
     }
-    /**
-     * 把LatLonPoint对象转化为LatLon对象
-     */
-    public static LatLng convertToLatLng(LatLonPoint latLonPoint) {
-        if (latLonPoint ==null){
-            return null;
-        }
-        return new LatLng(latLonPoint.getLatitude(), latLonPoint.getLongitude());
-    }
 
-    public class ViewPoiOverlay extends PoiOverlay {
-
-        public ViewPoiOverlay(AMap aMap, List<PoiItem> list) {
-            super(aMap, list);
-        }
+    class MyRadioButtonListener implements RadioGroup.OnCheckedChangeListener {
 
         @Override
-        protected BitmapDescriptor getBitmapDescriptor(int index) {
-            View view = null;
-            view = View.inflate(MainActivity.this, R.layout.custom_view, null);
-            TextView textView = ((TextView) view.findViewById(R.id.title));
-            textView.setText(getTitle(index));
+        public void onCheckedChanged(RadioGroup group, int checkedId) {
+            // 选中状态改变时被触发
+            switch (checkedId) {
+                case R.id.radio_mine:
+                    Log.i("RadioGroup", "当前用户选择"+rb_mainBottom_mine.getText().toString());
+                    Intent intent = new Intent();
+                    ComponentName cn = new ComponentName("amap.android_multiple_infowindows", "amap.android_multiple_infowindows.RegisterActivity");
+                    //param1:Activity所在应用的包名
+                    //param2:Activity的包名+类名
+                    intent.setComponent(cn);
+                    startActivity(intent);
+                    break;
+                default:
+                    Log.i("RadioGroup", "当前用户选择 未实现");
 
-            return  BitmapDescriptorFactory.fromView(view);
+            }
         }
     }
 
-    /**
-     * 方法必须重写
-     */
     @Override
-    protected void onResume() {
-        super.onResume();
-        mapView.onResume();
-
-    }
-    /**
-     * 方法必须重写
-     */
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mapView.onPause();
-    }
-    /**
-     * 方法必须重写
-     */
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        mapView.onSaveInstanceState(outState);
-    }
-    /**
-     * 方法必须重写
-     */
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mapView.onDestroy();
+    public void onLocationChanged(AMapLocation amapLocation) {
+        if (amapLocation != null) {
+            if (amapLocation.getErrorCode() == 0) {
+                mListener.onLocationChanged(amapLocation);
+                //定位成功回调信息，设置相关消息
+                amapLocation.getLocationType();//获取当前定位结果来源，如网络定位结果，详见定位类型表
+                amapLocation.getLatitude();//获取纬度
+                amapLocation.getLongitude();//获取经度
+                amapLocation.getAccuracy();//获取精度信息
+                SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date date = new Date(amapLocation.getTime());
+                df.format(date);//定位时间
+                System.out.println("local point" + amapLocation.getLatitude() + "-----" + amapLocation.getLongitude());
+            } else {
+                //显示错误信息ErrCode是错误码，errInfo是错误信息，详见错误码表。
+                Log.e("AmapError","location Error, ErrCode:"
+                        + amapLocation.getErrorCode() + ", errInfo:"
+                        + amapLocation.getErrorInfo());
+            }
+        }
     }
 
+    @Override
+    public void activate(OnLocationChangedListener onLocationChangedListener) {
+        System.out.println("has actived");
+        mListener=onLocationChangedListener;
+        if(mlocationClient == null){
+            /*get your current location  and send to sql to get shop name and info around you*/
+            mlocationClient = new AMapLocationClient(this);
+            //初始化定位参数
+            mLocationOption = new AMapLocationClientOption();
+            //设置定位监听
+            mlocationClient.setLocationListener(this);
+            //设置定位模式为高精度模式，Battery_Saving为低功耗模式，Device_Sensors是仅设备模式
+            mLocationOption.setLocationMode(AMapLocationMode.Hight_Accuracy);
+            //设置定位间隔,单位毫秒,默认为2000ms
+            mLocationOption.setInterval(2000);
+            //设置定位参数
+            mlocationClient.setLocationOption(mLocationOption);
+            mlocationClient.startLocation();
+        }
 
+
+    }
+
+    @Override
+    public void deactivate() {
+        mlocationClient = null;
+    }
 }
+

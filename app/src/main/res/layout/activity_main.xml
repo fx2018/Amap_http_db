@@ -1,10 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:orientation="vertical" >
+<!-- head -->
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" >
+    <include layout="@layout/main_top"/>
+</LinearLayout>
+
+<!-- 中间 -->
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
     tools:context="amap.android_multiple_infowindows.MainActivity">
 
     <com.amap.api.maps.MapView
@@ -12,3 +25,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 </RelativeLayout>
+
+<!-- 底部 -->
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" >
+    <include layout="@layout/main_bottom"/>
+</LinearLayout>
+
+</LinearLayout>

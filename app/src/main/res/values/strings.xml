@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">android-multiple-infowindows</string>
+    <string name="password">password</string>
+    <string name="username">username</string>
 </resources>
