@@ -4,7 +4,7 @@
 本工程为基于高德地图Android SDK进行封装，用marker来实现同时显示多个infowindow的效果。
 
 ##效果展示##
-![Screenshot]( https://github.com/amap-demo/android-multiple-infowindows/raw/master/apk/picture.png )
+
 
 ## 使用方法##
 ###1:配置搭建AndroidSDK工程###

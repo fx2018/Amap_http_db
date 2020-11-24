@@ -36,7 +36,7 @@
 
         <meta-data
             android:name="com.amap.api.v2.apikey"
-            android:value="31b313b29919e0dda807abbc2a7524fe" /> <!-- 定位需要的服务 适配Android Q需要加上android:foregroundServiceType="location" -->
+            android:value="f849ef3024992548643b8aadbeb261ec" /> <!-- 定位需要的服务 适配Android Q需要加上android:foregroundServiceType="location" -->
         <service android:name="com.amap.api.location.APSService" />
 
         <activity android:name=".RegisterActivity">

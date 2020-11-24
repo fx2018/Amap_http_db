@@ -21,8 +21,7 @@
             android:layout_height="wrap_content"
             android:ems="10"
             android:hint="ShopName"
-            android:inputType="textPersonName"
-            android:text="ShopName" />
+            android:inputType="textPersonName" />
 
         <EditText
             android:id="@+id/editText4"
@@ -30,8 +29,7 @@
             android:layout_height="wrap_content"
             android:ems="10"
             android:hint="Type"
-            android:inputType="textPersonName"
-            android:text="Type" />
+            android:inputType="textPersonName" />
 
         <EditText
             android:id="@+id/editText2"
@@ -39,8 +37,7 @@
             android:layout_height="wrap_content"
             android:ems="10"
             android:hint="LocationX"
-            android:inputType="textPersonName"
-            android:text="LocationX" />
+            android:inputType="textPersonName" />
 
         <EditText
             android:id="@+id/editText3"
@@ -48,16 +45,15 @@
             android:layout_height="wrap_content"
             android:ems="10"
             android:hint="LocationY"
-            android:inputType="textPersonName"
-            android:text="LocationY" />
+            android:inputType="textPersonName" />
 
         <EditText
             android:id="@+id/editText5"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
-            android:inputType="textPersonName"
-            android:text="Details" />
+            android:hint="ShopDetails"
+            android:inputType="textPersonName" />
 
         <Button
             android:id="@+id/button"
@@ -68,8 +64,7 @@
         <TextView
             android:id="@+id/textView7"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="TextView" />
+            android:layout_height="wrap_content" />
 
     </LinearLayout>
 

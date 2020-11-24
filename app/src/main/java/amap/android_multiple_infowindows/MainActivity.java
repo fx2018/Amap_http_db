@@ -42,6 +42,7 @@ public class MainActivity extends AppCompatActivity
     private OnLocationChangedListener mListener;
     private RadioGroup rg_mainBottom;
     private RadioButton rb_mainBottom_mine;
+    private RadioButton rb_mainBottom_find;
 
     //声明mlocationClient对象
     public AMapLocationClient mlocationClient;
@@ -84,6 +85,7 @@ public class MainActivity extends AppCompatActivity
 
         rg_mainBottom = (RadioGroup) findViewById(R.id.radioGroupMainBottom);
         rb_mainBottom_mine = (RadioButton) findViewById(R.id.radio_mine);
+        rb_mainBottom_find = (RadioButton) findViewById(R.id.radio_find);
         //注意是给RadioGroup绑定监视器
         rg_mainBottom.setOnCheckedChangeListener(new MyRadioButtonListener() );
 
@@ -114,7 +116,7 @@ public class MainActivity extends AppCompatActivity
 
         startActivity(intent);
 
-        System.out.println("center point" + centerLatLng.latitude+ "-----" + centerLatLng.longitude);
+        //System.out.println("center point" + centerLatLng.latitude+ "-----" + centerLatLng.longitude);
         //drawCircle(centerLatLng);
     }
 
@@ -153,6 +155,16 @@ public class MainActivity extends AppCompatActivity
                     //param2:Activity的包名+类名
                     intent.setComponent(cn);
                     startActivity(intent);
+                    break;
+
+                case R.id.radio_find:
+                    Log.i("RadioGroup", "当前用户选择"+rb_mainBottom_find.getText().toString());
+                    Intent intent_find = new Intent();
+                    ComponentName cn_find = new ComponentName("amap.android_multiple_infowindows", "amap.android_multiple_infowindows.ShopDetails");
+                    //param1:Activity所在应用的包名
+                    //param2:Activity的包名+类名
+                    intent_find.setComponent(cn_find);
+                    startActivity(intent_find);
                     break;
                 default:
                     Log.i("RadioGroup", "当前用户选择 未实现");

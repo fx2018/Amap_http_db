@@ -108,9 +108,16 @@ public class AddShop extends AppCompatActivity {
         double locationX = bundle.getDouble("locationX");
         double locationY = bundle.getDouble("locationY");
 
+        etShopName = (EditText) findViewById(R.id.editText);
+        etType = (EditText) findViewById(R.id.editText4);
+        etLocationX = (EditText) findViewById(R.id.editText2);
+        etLocationY = (EditText) findViewById(R.id.editText3);
+        etDetails = (EditText) findViewById(R.id.editText5);
+        tv1 = (TextView) findViewById(R.id.textView7);
+
         etLocationX.setText(Double.toString(locationX));
         etLocationY.setText(Double.toString(locationY));
-
+        System.out.println("selected point" + Double.toString(locationX) + "-----" + Double.toString(locationY));
     }
 /*
     private String convertDecimalFormat(double num)
@@ -132,12 +139,6 @@ public class AddShop extends AppCompatActivity {
 
         @Override
         public void run() {
-            etShopName = (EditText) findViewById(R.id.editText);
-            etType = (EditText) findViewById(R.id.editText4);
-            etLocationX = (EditText) findViewById(R.id.editText2);
-            etLocationY = (EditText) findViewById(R.id.editText3);
-            etDetails = (EditText) findViewById(R.id.editText5);
-            tv1 = (TextView) findViewById(R.id.textView7);
 
             Button btnSubmit = (Button) findViewById(R.id.button);
             btnSubmit.setOnClickListener(new View.OnClickListener(){
