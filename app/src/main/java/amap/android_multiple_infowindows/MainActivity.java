@@ -96,9 +96,29 @@ public class MainActivity extends AppCompatActivity
         markerOption.icon(ICON_YELLOW);
         centerLatLng = latLng;
         addCenterMarker(centerLatLng);
+
+        Intent intent = new Intent();
+        ComponentName cn = new ComponentName("amap.android_multiple_infowindows", "amap.android_multiple_infowindows.AddShop");
+        //param1:Activity所在应用的包名
+        //param2:Activity的包名+类名
+        intent.setComponent(cn);
+
+        /* 通过Bundle对象存储需要传递的数据 */
+        Bundle bundle = new Bundle();
+        /*字符、字符串、布尔、字节数组、浮点数等等，都可以传*/
+        bundle.putDouble("locationX", centerLatLng.latitude);
+        bundle.putDouble("locationY", centerLatLng.longitude);
+
+        /*把bundle对象assign给Intent*/
+        intent.putExtras(bundle);
+
+        startActivity(intent);
+
         System.out.println("center point" + centerLatLng.latitude+ "-----" + centerLatLng.longitude);
         //drawCircle(centerLatLng);
     }
+
+
     private void addCenterMarker(LatLng latlng) {
         if(null == centerMarker){
             centerMarker = aMap.addMarker(markerOption);
