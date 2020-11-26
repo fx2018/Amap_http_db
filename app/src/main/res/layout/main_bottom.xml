@@ -4,43 +4,47 @@ android:layout_width="match_parent"
 android:layout_height="match_parent"
 android:orientation="horizontal" >
 
-<RadioGroup
-    android:id="@+id/radioGroupMainBottom"
-    android:layout_width="match_parent"
-    android:layout_height="50dp"
-    android:orientation="horizontal"
-    android:background="#445411"
-    android:gravity="center">
+    <RadioGroup
+        android:id="@+id/radioGroupMainBottom"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@android:color/holo_blue_bright"
+        android:gravity="center"
+        android:orientation="horizontal">
 
-    <RadioButton
-        android:id="@+id/radio_map"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:checked="true"
-        android:text="地图"
-        style="@style/radioStyle"/>
+        <RadioButton
+            android:id="@+id/radio_map"
+            style="@style/radioStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="地图"
+            android:textColor="@android:color/background_dark" />
 
 
-    <RadioButton
-        android:id="@+id/radio_friend"
-        style="@style/radioStyle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="朋友" />
+        <RadioButton
+            android:id="@+id/radio_friend"
+            style="@style/radioStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="朋友"
+            android:textColor="@android:color/background_dark" />
 
-    <RadioButton
-        android:id="@+id/radio_find"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="发现"
-        style="@style/radioStyle" />
+        <RadioButton
+            android:id="@+id/radio_find"
+            style="@style/radioStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="发现"
+            android:textColor="@android:color/background_dark" />
 
-    <RadioButton
-        android:id="@+id/radio_mine"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="我的"
-        style="@style/radioStyle"/>
-</RadioGroup>
+        <RadioButton
+            android:id="@+id/radio_mine"
+            style="@style/radioStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="新店"
+            android:textColor="@android:color/background_dark" />
+    </RadioGroup>
 
 </LinearLayout>

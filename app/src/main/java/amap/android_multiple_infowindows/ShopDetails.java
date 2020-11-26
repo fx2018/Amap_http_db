@@ -3,10 +3,14 @@ package amap.android_multiple_infowindows;
 import android.net.http.SslError;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.View;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.Toast;
 
 import static android.view.View.SCROLLBARS_OUTSIDE_OVERLAY;
 
@@ -19,6 +23,8 @@ public class ShopDetails extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_shop_details);
+        new Thread(new ListenBuyButton()).start();
+
         webView = (WebView)this.findViewById(R.id.webview);
 
         webView.setWebChromeClient(new WebChromeClient(){
@@ -61,5 +67,54 @@ public class ShopDetails extends AppCompatActivity {
         //load URI
         webView.loadUrl(uri);
 
+    }
+
+    private String getItemName()
+    {
+        return "";
+    }
+
+    private String getShopID()
+    {
+        return "";
+    }
+
+    private String getUserName()
+    {
+        return "";
+    }
+
+    private String getUserAddr()
+    {
+        return "";
+    }
+
+    private boolean callAliPay()
+    {
+        return false;
+    }
+
+    public void submitDataToMeiTuan(String username, String shopid, String itemname, String useraddr)
+    {
+
+    }
+
+    public class ListenBuyButton implements Runnable {
+
+        @Override
+        public void run() {
+
+            Button btnSubmit = (Button) findViewById(R.id.button_buy);
+            btnSubmit.setOnClickListener(new View.OnClickListener(){
+                @Override
+                public void onClick(View v) {
+                    submitDataToMeiTuan(getUserName(),getShopID(),getItemName(),getUserAddr());
+                    if(!callAliPay())
+                    {
+                        Toast.makeText(ShopDetails.this, "buy sccuess！", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }
     }
 }

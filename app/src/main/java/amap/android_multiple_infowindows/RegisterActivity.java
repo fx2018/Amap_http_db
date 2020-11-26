@@ -117,7 +117,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     }
 
-    public class  ListenLogAndRegistButtom implements Runnable {
+    public class ListenLogAndRegistButtom implements Runnable {
 
         @Override
         public void run() {

@@ -5,8 +5,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
 
@@ -43,6 +47,7 @@ public class MainActivity extends AppCompatActivity
     private RadioGroup rg_mainBottom;
     private RadioButton rb_mainBottom_mine;
     private RadioButton rb_mainBottom_find;
+    private EditText et_search;
 
     //声明mlocationClient对象
     public AMapLocationClient mlocationClient;
@@ -58,7 +63,7 @@ public class MainActivity extends AppCompatActivity
     private MarkerOptions markerOption = null;
     // 中心点坐标
     private LatLng centerLatLng = null;
-
+    private TextView textview_mine = null;
 
     // 当前的坐标点集合，主要用于进行地图的可视区域的缩放
     LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
@@ -83,11 +88,15 @@ public class MainActivity extends AppCompatActivity
         aMap.getUiSettings().setMyLocationButtonEnabled(true);
         aMap.setMyLocationType(AMap.LOCATION_TYPE_LOCATE);
 
+        textview_mine = (TextView) findViewById(R.id.textView1);
         rg_mainBottom = (RadioGroup) findViewById(R.id.radioGroupMainBottom);
         rb_mainBottom_mine = (RadioButton) findViewById(R.id.radio_mine);
         rb_mainBottom_find = (RadioButton) findViewById(R.id.radio_find);
+        et_search = (EditText) findViewById(R.id.editText_search);
+
         //注意是给RadioGroup绑定监视器
         rg_mainBottom.setOnCheckedChangeListener(new MyRadioButtonListener() );
+        textview_mine.setOnClickListener(new MineClickListener());
 
         aMap.setOnMapClickListener(MainActivity.this);
         markerOption = new MarkerOptions().draggable(true);
@@ -99,6 +108,13 @@ public class MainActivity extends AppCompatActivity
         centerLatLng = latLng;
         addCenterMarker(centerLatLng);
 
+        //System.out.println("center point" + centerLatLng.latitude+ "-----" + centerLatLng.longitude);
+        //drawCircle(centerLatLng);
+
+    }
+
+    private void transDataToRegNewShop()
+    {
         Intent intent = new Intent();
         ComponentName cn = new ComponentName("amap.android_multiple_infowindows", "amap.android_multiple_infowindows.AddShop");
         //param1:Activity所在应用的包名
@@ -115,11 +131,7 @@ public class MainActivity extends AppCompatActivity
         intent.putExtras(bundle);
 
         startActivity(intent);
-
-        //System.out.println("center point" + centerLatLng.latitude+ "-----" + centerLatLng.longitude);
-        //drawCircle(centerLatLng);
     }
-
 
     private void addCenterMarker(LatLng latlng) {
         if(null == centerMarker){
@@ -128,6 +140,7 @@ public class MainActivity extends AppCompatActivity
         centerMarker.setPosition(latlng);
         centerMarker.setVisible(true);
     }
+
     private void drawCircle(LatLng centerPoint) {
         // 绘制一个圆形
         aMap.addCircle(new CircleOptions().center(centerPoint)
@@ -141,6 +154,20 @@ public class MainActivity extends AppCompatActivity
 
     }
 
+    class MineClickListener implements TextView.OnClickListener
+    {
+        @Override
+        public void onClick(View view)
+        {
+            Intent intent = new Intent();
+            ComponentName cn = new ComponentName("amap.android_multiple_infowindows", "amap.android_multiple_infowindows.RegisterActivity");
+            //param1:Activity所在应用的包名
+            //param2:Activity的包名+类名
+            intent.setComponent(cn);
+            startActivity(intent);
+        }
+    }
+
     class MyRadioButtonListener implements RadioGroup.OnCheckedChangeListener {
 
         @Override
@@ -148,13 +175,15 @@ public class MainActivity extends AppCompatActivity
             // 选中状态改变时被触发
             switch (checkedId) {
                 case R.id.radio_mine:
-                    Log.i("RadioGroup", "当前用户选择"+rb_mainBottom_mine.getText().toString());
-                    Intent intent = new Intent();
-                    ComponentName cn = new ComponentName("amap.android_multiple_infowindows", "amap.android_multiple_infowindows.RegisterActivity");
-                    //param1:Activity所在应用的包名
-                    //param2:Activity的包名+类名
-                    intent.setComponent(cn);
-                    startActivity(intent);
+
+                    if(centerLatLng != null)
+                    {
+                        transDataToRegNewShop();
+                    }
+                    else
+                    {
+                        Toast.makeText(MainActivity.this, "请在地图上选择点", Toast.LENGTH_SHORT).show();
+                    }
                     break;
 
                 case R.id.radio_find:

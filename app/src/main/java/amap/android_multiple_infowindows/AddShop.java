@@ -135,7 +135,7 @@ public class AddShop extends AppCompatActivity {
         new AddShop.MyAsyncTask(tv1).execute(shopRegisterUrlStr);
     }
 
-    public class  ListenAddShopButton implements Runnable {
+    public class ListenAddShopButton implements Runnable {
 
         @Override
         public void run() {
