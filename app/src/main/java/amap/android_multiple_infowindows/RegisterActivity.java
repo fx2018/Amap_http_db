@@ -104,9 +104,9 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void login(String account, String password) {
-        String registerUrlStr = URL_Login + "?account=" + account + "&password=" + password;
+        String loginUrlStr = URL_Login + "?account=" + account + "&password=" + password;
         //TextView tvResult = null;
-        new MyAsyncTask(tvResult).execute(registerUrlStr);
+        new MyAsyncTask(tvResult).execute(loginUrlStr);
     }
 
     @Override

@@ -2,10 +2,14 @@ package amap.android_multiple_infowindows;
 
 import android.content.ComponentName;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -22,8 +26,16 @@ import com.amap.api.maps.model.BitmapDescriptorFactory;
 import com.amap.api.maps.model.CircleOptions;
 import com.amap.api.maps.model.LatLng;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
+import java.util.List;
 
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
@@ -35,11 +47,19 @@ import com.amap.api.maps.LocationSource;
 import com.amap.api.maps.model.LatLngBounds;
 import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
+import com.amap.api.maps.model.animation.Animation;
+import com.amap.api.maps.model.animation.RotateAnimation;
+import com.amap.api.services.core.LatLonPoint;
+import com.amap.api.services.core.PoiItem;
+import com.amap.api.services.poisearch.PoiResult;
+import com.amap.api.services.poisearch.PoiSearch;
+
+import overlay.PoiOverlay;
 
 
 public class MainActivity extends AppCompatActivity
         implements
-        AMapLocationListener, LocationSource, AMap.OnMapClickListener {
+        AMapLocationListener, LocationSource, AMap.OnMapClickListener, PoiSearch.OnPoiSearchListener {
     private AMap aMap;
     private MapView mapView;
     private LatLng centerpoint1;
@@ -48,6 +68,11 @@ public class MainActivity extends AppCompatActivity
     private RadioButton rb_mainBottom_mine;
     private RadioButton rb_mainBottom_find;
     private EditText et_search;
+    private TextView tvResult;
+    LatLng position;
+    String shopName = "";
+    private static final int MSG_SUCCESS = 0;
+    private static final int MSG_FAILURE = 1;
 
     //声明mlocationClient对象
     public AMapLocationClient mlocationClient;
@@ -55,6 +80,7 @@ public class MainActivity extends AppCompatActivity
     public AMapLocationClientOption mLocationOption = null;
 
     // 中心点marker
+    ViewPoiOverlay poiOverlay;
     private Marker centerMarker;
     private BitmapDescriptor ICON_YELLOW = BitmapDescriptorFactory
             .defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
@@ -65,9 +91,100 @@ public class MainActivity extends AppCompatActivity
     private LatLng centerLatLng = null;
     private TextView textview_mine = null;
 
+    public static final String URL = "http://192.168.43.75:8080/ServLetTest/";
+    public static final String URL_getShopInfo = URL + "getShopInfo";
+
     // 当前的坐标点集合，主要用于进行地图的可视区域的缩放
     LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
 
+
+    private Handler mHandler = new Handler() {
+        public void handleMessage (Message msg) {//此方法在ui线程运行
+            switch(msg.what) {
+                case MSG_SUCCESS:
+                    ShopInfo[] shopinfo = analyzeData(msg.obj.toString());
+                    for(int i =0; i < shopinfo.length; i++) {
+                        LatLng location = new LatLng(30.221750 +i,104.242985);
+                        if(null == shopinfo[i].companyName) {
+                         continue;
+                        }
+                        showDataOnMap(location, shopinfo[i].companyName);
+                    }
+
+                    break;
+
+                case MSG_FAILURE:
+
+                    break;
+            }
+        }
+    };
+
+
+    public class MyAsyncTask extends AsyncTask<String, Integer, String> {
+        private String tv;
+
+        public MyAsyncTask(String v) {
+            tv = v;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            Log.w("feifei", "task onPreExecute()");
+        }
+        @Override
+        protected String doInBackground(String... params) {
+            Log.w("WangJ", "task doInBackground()");
+            HttpURLConnection connection = null;
+            StringBuilder response = new StringBuilder();
+            try {
+                java.net.URL url = new URL(params[0]); // 声明一个URL,注意如果用百度首页实验，请使用https开头，否则获取不到返回报文
+                connection = (HttpURLConnection) url.openConnection(); // 打开该URL连接
+                connection.setRequestMethod("GET"); // 设置请求方法，“POST或GET”，我们这里用GET，在说到POST的时候再用POST
+                connection.setConnectTimeout(80000); // 设置连接建立的超时时间
+                connection.setReadTimeout(80000); // 设置网络报文收发超时时间
+                InputStream in = connection.getInputStream();  // 通过连接的输入流获取下发报文，然后就是Java的流处理
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return response.toString(); // 这里返回的结果就作为onPostExecute方法的入参
+        }
+
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            // 如果在doInBackground方法，那么就会立刻执行本方法
+            // 本方法在UI线程中执行，可以更新UI元素，典型的就是更新进度条进度，一般是在下载时候使用
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            mHandler.obtainMessage(MSG_SUCCESS,s).sendToTarget();
+            if(s.contains("code:200"))
+            {
+                Intent intent = new Intent();
+                ComponentName cn = new ComponentName("amap.android_multiple_infowindows", "amap.android_multiple_infowindows.MainActivity");
+                //param1:Activity所在应用的包名
+                //param2:Activity的包名+类名
+                intent.setComponent(cn);
+                startActivity(intent);
+            }
+        }
+    }
+
+    private void ShowAllShop(String shopInfo) {
+        String getShopInfoUrlStr = URL_getShopInfo;
+        //TextView tvResult = null;
+        new MyAsyncTask(shopInfo).execute(getShopInfoUrlStr);
+        if(shopInfo == "");
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,17 +211,93 @@ public class MainActivity extends AppCompatActivity
         rb_mainBottom_find = (RadioButton) findViewById(R.id.radio_find);
         et_search = (EditText) findViewById(R.id.editText_search);
 
-        //注意是给RadioGroup绑定监视器
+        //Bottom Bar Change Click
         rg_mainBottom.setOnCheckedChangeListener(new MyRadioButtonListener() );
+
+        //Mine Head Click
         textview_mine.setOnClickListener(new MineClickListener());
 
         aMap.setOnMapClickListener(MainActivity.this);
         markerOption = new MarkerOptions().draggable(true);
+
+        getInfoByDB();
+        //showDataOnMap("sad");
+
+    }
+
+    public class ShopInfo {
+        String companyName;
+        String locationX;
+        String locationY;
+        String shopDesc;
+
+        private void onClick(View v)
+        {
+
+        }
+    }
+
+    private ShopInfo[] analyzeData(String retVal)
+    {
+        String[] strArr = {};
+        strArr = retVal.split(";");
+        ShopInfo[] si = new ShopInfo[strArr.length];
+
+        for(int i=0;i< strArr.length;i++) {
+            String[] strArrEver = strArr[i].split(",");
+            if(null == strArrEver[0]) {
+                continue;
+            }
+            si[i].companyName = strArrEver[0];
+            si[i].locationX = strArrEver[1];
+            si[i].locationY = strArrEver[2];
+            si[i].shopDesc = strArrEver[3];
+        }
+
+        return si;
+    }
+
+    private void getInfoByDB()
+    {
+        ShowAllShop(shopName);
+    }
+
+    private void showDataOnMap(LatLng location,String shopName)
+    {
+        //centerLatLng = new LatLng(30.221750,104.242985);
+        addMarker(location, shopName);
+        aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location,13));
+    }
+
+    private void addMarker(LatLng position, String title) {
+        this.position = position;
+        if (position != null){
+            //初始化marker内容
+            MarkerOptions markerOptions = new MarkerOptions();
+            //这里很简单就加了一个TextView，根据需求可以加载复杂的View
+            View view = View.inflate(this, R.layout.custom_view, null);
+            TextView textView = ((TextView) view.findViewById(R.id.title1));
+            textView.setText(title);
+            BitmapDescriptor markerIcon = BitmapDescriptorFactory.fromView(view);
+            markerOptions.position(position).icon(markerIcon);
+            markerOptions.setFlat(true);//设置marker平贴地图效果
+            //markerOptions.icon(ICON_YELLOW);
+            markerOptions.draggable(true);
+            Animation animation = new RotateAnimation(markerOptions.getRotateAngle(),markerOptions.getRotateAngle()+180,0,0,0);
+            long duration = 1000L;
+            animation.setDuration(duration);
+            animation.setInterpolator(new LinearInterpolator());
+
+            aMap.addMarker(markerOptions);
+            aMap.addMarker(markerOptions).setAnimation(animation);
+            aMap.addMarker(markerOptions).startAnimation();
+        }
     }
 
     @Override
     public void onMapClick(LatLng latLng) {
         markerOption.icon(ICON_YELLOW);
+        markerOption.title(shopName);
         centerLatLng = latLng;
         addCenterMarker(centerLatLng);
 
@@ -252,5 +445,61 @@ public class MainActivity extends AppCompatActivity
     public void deactivate() {
         mlocationClient = null;
     }
+
+
+
+    @Override
+    public void onPoiSearched(PoiResult poiResult, int errorCode) {
+        if (errorCode == 1000) {
+            if (poiResult != null && poiResult.getQuery() != null) {
+
+                List<PoiItem> poiItems = poiResult.getPois();
+                if (poiItems != null && poiItems.size() > 0) {
+                    aMap.clear();// 清理之前的图标
+                    poiOverlay = new ViewPoiOverlay(aMap, poiItems);
+                    poiOverlay.removeFromMap();
+                    poiOverlay.addToMap();
+                    poiOverlay.zoomToSpan();
+                } else {
+                    Toast.makeText(MainActivity.this, "无搜索结果", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(MainActivity.this, "无搜索结果", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    public void onPoiItemSearched(PoiItem poiItem, int i) {
+
+    }
+
+    /**
+     * 把LatLonPoint对象转化为LatLon对象
+     */
+    public static LatLng convertToLatLng(LatLonPoint latLonPoint) {
+        if (latLonPoint ==null){
+            return null;
+        }
+        return new LatLng(latLonPoint.getLatitude(), latLonPoint.getLongitude());
+    }
+
+    public class ViewPoiOverlay extends PoiOverlay {
+
+        public ViewPoiOverlay(AMap aMap, List<PoiItem> list) {
+            super(aMap, list);
+        }
+
+        @Override
+        protected BitmapDescriptor getBitmapDescriptor(int index) {
+            View view = null;
+            view = View.inflate(MainActivity.this, R.layout.custom_view, null);
+            TextView textView = ((TextView) view.findViewById(R.id.title1));
+            textView.setText(getTitle(index));
+
+            return  BitmapDescriptorFactory.fromView(view);
+        }
+    }
+
 }
 
