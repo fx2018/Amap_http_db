@@ -8,8 +8,9 @@
         <TextView
             android:id="@+id/title1"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="33dp"
             android:background="@drawable/custom_info_bubble"
+            android:clickable="true"
             android:ellipsize="end"
             android:gravity="center_horizontal"
             android:text="望京公园"

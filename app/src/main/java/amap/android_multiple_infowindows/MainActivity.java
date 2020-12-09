@@ -94,6 +94,7 @@ public class MainActivity extends AppCompatActivity
     public static final String URL = "http://192.168.43.75:8080/ServLetTest/";
     public static final String URL_getShopInfo = URL + "getShopInfo";
 
+    public ShopInfo[] shopinfo;
     // 当前的坐标点集合，主要用于进行地图的可视区域的缩放
     LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
 
@@ -102,12 +103,14 @@ public class MainActivity extends AppCompatActivity
         public void handleMessage (Message msg) {//此方法在ui线程运行
             switch(msg.what) {
                 case MSG_SUCCESS:
-                    ShopInfo[] shopinfo = analyzeData(msg.obj.toString());
+                    shopinfo = analyzeData(msg.obj.toString());
                     for(int i =0; i < shopinfo.length; i++) {
-                        LatLng location = new LatLng(30.221750 +i,104.242985);
-                        if(null == shopinfo[i].companyName) {
-                         continue;
+                        if("null" == shopinfo[i].companyName) {
+                            continue;
                         }
+                        //Draw every location
+                        LatLng location = new LatLng(Double.valueOf(shopinfo[i].locationX),Double.valueOf(shopinfo[i].locationY));
+
                         showDataOnMap(location, shopinfo[i].companyName);
                     }
 
@@ -183,7 +186,6 @@ public class MainActivity extends AppCompatActivity
         String getShopInfoUrlStr = URL_getShopInfo;
         //TextView tvResult = null;
         new MyAsyncTask(shopInfo).execute(getShopInfoUrlStr);
-        if(shopInfo == "");
     }
 
     @Override
@@ -220,9 +222,27 @@ public class MainActivity extends AppCompatActivity
         aMap.setOnMapClickListener(MainActivity.this);
         markerOption = new MarkerOptions().draggable(true);
 
+        new Thread(new customViewButton()).start();
+
         getInfoByDB();
         //showDataOnMap("sad");
 
+    }
+
+    public class customViewButton implements Runnable {
+
+        @Override
+        public void run() {
+
+            TextView txv = (TextView) findViewById(R.id.title1);
+            txv.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+
+                }
+            });
+        }
     }
 
     public class ShopInfo {
@@ -231,13 +251,17 @@ public class MainActivity extends AppCompatActivity
         String locationY;
         String shopDesc;
 
-        private void onClick(View v)
+        public ShopInfo()
         {
-
+            companyName = "0";
+            locationX = "0";
+            locationY = "0";
+            shopDesc = "0";
         }
+
     }
 
-    private ShopInfo[] analyzeData(String retVal)
+    public ShopInfo[] analyzeData(String retVal)
     {
         String[] strArr = {};
         strArr = retVal.split(";");
@@ -245,7 +269,8 @@ public class MainActivity extends AppCompatActivity
 
         for(int i=0;i< strArr.length;i++) {
             String[] strArrEver = strArr[i].split(",");
-            if(null == strArrEver[0]) {
+            si[i]=new ShopInfo();
+            if(strArrEver[0].isEmpty() || strArrEver[0]=="null") {
                 continue;
             }
             si[i].companyName = strArrEver[0];
@@ -319,6 +344,26 @@ public class MainActivity extends AppCompatActivity
         /*字符、字符串、布尔、字节数组、浮点数等等，都可以传*/
         bundle.putDouble("locationX", centerLatLng.latitude);
         bundle.putDouble("locationY", centerLatLng.longitude);
+
+        /*把bundle对象assign给Intent*/
+        intent.putExtras(bundle);
+
+        startActivity(intent);
+    }
+
+    private void transDataToShopDetails()
+    {
+        Intent intent = new Intent();
+        ComponentName cn = new ComponentName("amap.android_multiple_infowindows", "amap.android_multiple_infowindows.ShopDetails");
+        //param1:Activity所在应用的包名
+        //param2:Activity的包名+类名
+        intent.setComponent(cn);
+
+
+        /* 通过Bundle对象存储需要传递的数据 */
+        Bundle bundle = new Bundle();
+        /*字符、字符串、布尔、字节数组、浮点数等等，都可以传*/
+        //bundle.putDouble("shopDesc", shopinfo[]);
 
         /*把bundle对象assign给Intent*/
         intent.putExtras(bundle);
