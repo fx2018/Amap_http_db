@@ -99,6 +99,9 @@ public class MainActivity extends AppCompatActivity
     LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
 
 
+    /*
+    =============================================UI code====================================================
+    */
     private Handler mHandler = new Handler() {
         public void handleMessage (Message msg) {//此方法在ui线程运行
             switch(msg.what) {
@@ -124,6 +127,96 @@ public class MainActivity extends AppCompatActivity
     };
 
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        mapView = (MapView) findViewById(R.id.map);
+        mapView.onCreate(savedInstanceState);// 此方法必须重写
+
+
+        // 此方法为每隔固定时间会发起一次定位请求，为了减少电量消耗或网络流量消耗，
+        // 注意设置合适的定位时间的间隔（最小间隔支持为1000ms），并且在合适时间调用stopLocation()方法来取消定位请求
+        // 在定位结束后，在合适的生命周期调用onDestroy()方法
+        // 在单次定位情况下，定位无论成功与否，都无需调用stopLocation()方法移除请求，定位sdk内部会移除
+        //启动定位
+        aMap = mapView.getMap();
+        aMap.setLocationSource(MainActivity.this);
+        aMap.setMyLocationEnabled(true);
+        aMap.getUiSettings().setMyLocationButtonEnabled(true);
+        aMap.setMyLocationType(AMap.LOCATION_TYPE_LOCATE);
+
+        textview_mine = (TextView) findViewById(R.id.textView1);
+        rg_mainBottom = (RadioGroup) findViewById(R.id.radioGroupMainBottom);
+        rb_mainBottom_mine = (RadioButton) findViewById(R.id.radio_mine);
+        rb_mainBottom_find = (RadioButton) findViewById(R.id.radio_find);
+        et_search = (EditText) findViewById(R.id.editText_search);
+
+        //Bottom Bar Change Click
+        rg_mainBottom.setOnCheckedChangeListener(new MyRadioButtonListener() );
+
+        //Mine Head Click
+        textview_mine.setOnClickListener(new MineClickListener());
+
+        aMap.setOnMapClickListener(MainActivity.this);
+        markerOption = new MarkerOptions().draggable(true);
+
+        new Thread(new customViewButton()).start();
+
+        getInfoByDB();
+        //showDataOnMap("sad");
+
+    }
+
+    private void getInfoByDB()
+    {
+        ShowAllShop(shopName);
+    }
+
+    /*
+    ====================================Data Handling=================================================
+    */
+    public class ShopInfo {
+        String companyName;
+        String locationX;
+        String locationY;
+        String shopDesc;
+
+        public ShopInfo()
+        {
+            companyName = "0";
+            locationX = "0";
+            locationY = "0";
+            shopDesc = "0";
+        }
+
+    }
+
+    public ShopInfo[] analyzeData(String retVal)
+    {
+        String[] strArr = {};
+        strArr = retVal.split(";");
+        ShopInfo[] si = new ShopInfo[strArr.length];
+
+        for(int i=0;i< strArr.length;i++) {
+            String[] strArrEver = strArr[i].split(",");
+            si[i]=new ShopInfo();
+            if(strArrEver[0].isEmpty() || strArrEver[0]=="null") {
+                continue;
+            }
+            si[i].companyName = strArrEver[0];
+            si[i].locationX = strArrEver[1];
+            si[i].locationY = strArrEver[2];
+            si[i].shopDesc = strArrEver[3];
+        }
+
+        return si;
+    }
+
+
+    /*
+    =========================================HTTP method=========================================
+     */
     public class MyAsyncTask extends AsyncTask<String, Integer, String> {
         private String tv;
 
@@ -182,155 +275,17 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    //HTTP get value from DB
     private void ShowAllShop(String shopInfo) {
         String getShopInfoUrlStr = URL_getShopInfo;
         //TextView tvResult = null;
         new MyAsyncTask(shopInfo).execute(getShopInfoUrlStr);
     }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        mapView = (MapView) findViewById(R.id.map);
-        mapView.onCreate(savedInstanceState);// 此方法必须重写
 
-
-        // 此方法为每隔固定时间会发起一次定位请求，为了减少电量消耗或网络流量消耗，
-        // 注意设置合适的定位时间的间隔（最小间隔支持为1000ms），并且在合适时间调用stopLocation()方法来取消定位请求
-        // 在定位结束后，在合适的生命周期调用onDestroy()方法
-        // 在单次定位情况下，定位无论成功与否，都无需调用stopLocation()方法移除请求，定位sdk内部会移除
-        //启动定位
-        aMap = mapView.getMap();
-        aMap.setLocationSource(MainActivity.this);
-        aMap.setMyLocationEnabled(true);
-        aMap.getUiSettings().setMyLocationButtonEnabled(true);
-        aMap.setMyLocationType(AMap.LOCATION_TYPE_LOCATE);
-
-        textview_mine = (TextView) findViewById(R.id.textView1);
-        rg_mainBottom = (RadioGroup) findViewById(R.id.radioGroupMainBottom);
-        rb_mainBottom_mine = (RadioButton) findViewById(R.id.radio_mine);
-        rb_mainBottom_find = (RadioButton) findViewById(R.id.radio_find);
-        et_search = (EditText) findViewById(R.id.editText_search);
-
-        //Bottom Bar Change Click
-        rg_mainBottom.setOnCheckedChangeListener(new MyRadioButtonListener() );
-
-        //Mine Head Click
-        textview_mine.setOnClickListener(new MineClickListener());
-
-        aMap.setOnMapClickListener(MainActivity.this);
-        markerOption = new MarkerOptions().draggable(true);
-
-        new Thread(new customViewButton()).start();
-
-        getInfoByDB();
-        //showDataOnMap("sad");
-
-    }
-
-    public class customViewButton implements Runnable {
-
-        @Override
-        public void run() {
-
-            TextView txv = (TextView) findViewById(R.id.title1);
-            txv.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-
-                }
-            });
-        }
-    }
-
-    public class ShopInfo {
-        String companyName;
-        String locationX;
-        String locationY;
-        String shopDesc;
-
-        public ShopInfo()
-        {
-            companyName = "0";
-            locationX = "0";
-            locationY = "0";
-            shopDesc = "0";
-        }
-
-    }
-
-    public ShopInfo[] analyzeData(String retVal)
-    {
-        String[] strArr = {};
-        strArr = retVal.split(";");
-        ShopInfo[] si = new ShopInfo[strArr.length];
-
-        for(int i=0;i< strArr.length;i++) {
-            String[] strArrEver = strArr[i].split(",");
-            si[i]=new ShopInfo();
-            if(strArrEver[0].isEmpty() || strArrEver[0]=="null") {
-                continue;
-            }
-            si[i].companyName = strArrEver[0];
-            si[i].locationX = strArrEver[1];
-            si[i].locationY = strArrEver[2];
-            si[i].shopDesc = strArrEver[3];
-        }
-
-        return si;
-    }
-
-    private void getInfoByDB()
-    {
-        ShowAllShop(shopName);
-    }
-
-    private void showDataOnMap(LatLng location,String shopName)
-    {
-        //centerLatLng = new LatLng(30.221750,104.242985);
-        addMarker(location, shopName);
-        aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location,13));
-    }
-
-    private void addMarker(LatLng position, String title) {
-        this.position = position;
-        if (position != null){
-            //初始化marker内容
-            MarkerOptions markerOptions = new MarkerOptions();
-            //这里很简单就加了一个TextView，根据需求可以加载复杂的View
-            View view = View.inflate(this, R.layout.custom_view, null);
-            TextView textView = ((TextView) view.findViewById(R.id.title1));
-            textView.setText(title);
-            BitmapDescriptor markerIcon = BitmapDescriptorFactory.fromView(view);
-            markerOptions.position(position).icon(markerIcon);
-            markerOptions.setFlat(true);//设置marker平贴地图效果
-            //markerOptions.icon(ICON_YELLOW);
-            markerOptions.draggable(true);
-            Animation animation = new RotateAnimation(markerOptions.getRotateAngle(),markerOptions.getRotateAngle()+180,0,0,0);
-            long duration = 1000L;
-            animation.setDuration(duration);
-            animation.setInterpolator(new LinearInterpolator());
-
-            aMap.addMarker(markerOptions);
-            aMap.addMarker(markerOptions).setAnimation(animation);
-            aMap.addMarker(markerOptions).startAnimation();
-        }
-    }
-
-    @Override
-    public void onMapClick(LatLng latLng) {
-        markerOption.icon(ICON_YELLOW);
-        markerOption.title(shopName);
-        centerLatLng = latLng;
-        addCenterMarker(centerLatLng);
-
-        //System.out.println("center point" + centerLatLng.latitude+ "-----" + centerLatLng.longitude);
-        //drawCircle(centerLatLng);
-
-    }
-
+    /*
+    =========================================Activity value transfer=========================================
+    */
     private void transDataToRegNewShop()
     {
         Intent intent = new Intent();
@@ -371,27 +326,10 @@ public class MainActivity extends AppCompatActivity
         startActivity(intent);
     }
 
-    private void addCenterMarker(LatLng latlng) {
-        if(null == centerMarker){
-            centerMarker = aMap.addMarker(markerOption);
-        }
-        centerMarker.setPosition(latlng);
-        centerMarker.setVisible(true);
-    }
 
-    private void drawCircle(LatLng centerPoint) {
-        // 绘制一个圆形
-        aMap.addCircle(new CircleOptions().center(centerPoint)
-                .radius(100).strokeColor(Const.STROKE_COLOR)
-                .fillColor(Const.FILL_COLOR).strokeWidth(Const.STROKE_WIDTH));
-        boundsBuilder.include(centerPoint);
-
-        // 设置所有maker显示在当前可视区域地图中
-        LatLngBounds bounds = boundsBuilder.build();
-        aMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
-
-    }
-
+    /*
+    =========================================Button Click Listener=========================================
+     */
     class MineClickListener implements TextView.OnClickListener
     {
         @Override
@@ -403,6 +341,22 @@ public class MainActivity extends AppCompatActivity
             //param2:Activity的包名+类名
             intent.setComponent(cn);
             startActivity(intent);
+        }
+    }
+
+    public class customViewButton implements Runnable {
+
+        @Override
+        public void run() {
+
+            TextView txv = (TextView) findViewById(R.id.title1);
+            txv.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+
+                }
+            });
         }
     }
 
@@ -440,6 +394,10 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+
+    /*
+     =========================================Location related code===========================================
+     */
     @Override
     public void onLocationChanged(AMapLocation amapLocation) {
         if (amapLocation != null) {
@@ -492,7 +450,9 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
+    /*
+    =========================================Poi marker related code=========================================
+     */
     @Override
     public void onPoiSearched(PoiResult poiResult, int errorCode) {
         if (errorCode == 1000) {
@@ -519,9 +479,19 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    /**
-     * 把LatLonPoint对象转化为LatLon对象
-     */
+    @Override
+    public void onMapClick(LatLng latLng) {
+        markerOption.icon(ICON_YELLOW);
+        markerOption.title(shopName);
+        centerLatLng = latLng;
+        addCenterMarker(centerLatLng);
+
+        //System.out.println("center point" + centerLatLng.latitude+ "-----" + centerLatLng.longitude);
+        //drawCircle(centerLatLng);
+
+    }
+
+    //把LatLonPoint对象转化为LatLon对象
     public static LatLng convertToLatLng(LatLonPoint latLonPoint) {
         if (latLonPoint ==null){
             return null;
@@ -546,5 +516,57 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    private void addCenterMarker(LatLng latlng) {
+        if(null == centerMarker){
+            centerMarker = aMap.addMarker(markerOption);
+        }
+        centerMarker.setPosition(latlng);
+        centerMarker.setVisible(true);
+    }
+
+    private void drawCircle(LatLng centerPoint) {
+        // 绘制一个圆形
+        aMap.addCircle(new CircleOptions().center(centerPoint)
+                .radius(100).strokeColor(Const.STROKE_COLOR)
+                .fillColor(Const.FILL_COLOR).strokeWidth(Const.STROKE_WIDTH));
+        boundsBuilder.include(centerPoint);
+
+        // 设置所有maker显示在当前可视区域地图中
+        LatLngBounds bounds = boundsBuilder.build();
+        aMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
+
+    }
+
+    private void addMarker(LatLng position, String title) {
+        this.position = position;
+        if (position != null){
+            //初始化marker内容
+            MarkerOptions markerOptions = new MarkerOptions();
+            //这里很简单就加了一个TextView，根据需求可以加载复杂的View
+            View view = View.inflate(this, R.layout.custom_view, null);
+            TextView textView = ((TextView) view.findViewById(R.id.title1));
+            textView.setText(title);
+            BitmapDescriptor markerIcon = BitmapDescriptorFactory.fromView(view);
+            markerOptions.position(position).icon(markerIcon);
+            markerOptions.setFlat(true);//设置marker平贴地图效果
+            //markerOptions.icon(ICON_YELLOW);
+            markerOptions.draggable(true);
+            Animation animation = new RotateAnimation(markerOptions.getRotateAngle(),markerOptions.getRotateAngle()+180,0,0,0);
+            long duration = 1000L;
+            animation.setDuration(duration);
+            animation.setInterpolator(new LinearInterpolator());
+
+            aMap.addMarker(markerOptions);
+            aMap.addMarker(markerOptions).setAnimation(animation);
+            aMap.addMarker(markerOptions).startAnimation();
+        }
+    }
+
+    private void showDataOnMap(LatLng location,String shopName)
+    {
+        //centerLatLng = new LatLng(30.221750,104.242985);
+        addMarker(location, shopName);
+        aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location,13));
+    }
 }
 
