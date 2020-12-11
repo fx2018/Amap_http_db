@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity
                         //Draw every location
                         LatLng location = new LatLng(Double.valueOf(shopinfo[i].locationX),Double.valueOf(shopinfo[i].locationY));
 
-                        showDataOnMap(location, shopinfo[i].companyName);
+                        showDataOnMap(location, i);
                     }
 
                     break;
@@ -306,7 +306,7 @@ public class MainActivity extends AppCompatActivity
         startActivity(intent);
     }
 
-    private void transDataToShopDetails()
+    private void transDataToShopDetails(String shopDescp)
     {
         Intent intent = new Intent();
         ComponentName cn = new ComponentName("amap.android_multiple_infowindows", "amap.android_multiple_infowindows.ShopDetails");
@@ -318,7 +318,7 @@ public class MainActivity extends AppCompatActivity
         /* 通过Bundle对象存储需要传递的数据 */
         Bundle bundle = new Bundle();
         /*字符、字符串、布尔、字节数组、浮点数等等，都可以传*/
-        //bundle.putDouble("shopDesc", shopinfo[]);
+        bundle.putString("shopDesc", shopDescp);
 
         /*把bundle对象assign给Intent*/
         intent.putExtras(bundle);
@@ -348,11 +348,13 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         public void run() {
-
-            TextView txv = (TextView) findViewById(R.id.title1);
+            View view = null;
+            view = View.inflate(MainActivity.this, R.layout.custom_view, null);
+            TextView txv = (TextView) view.findViewById(R.id.title1);
             txv.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    Toast.makeText(MainActivity.this, "customViewButton", Toast.LENGTH_SHORT).show();
 
 
                 }
@@ -537,7 +539,7 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    private void addMarker(LatLng position, String title) {
+    private void addMarker(LatLng position, int index) {
         this.position = position;
         if (position != null){
             //初始化marker内容
@@ -545,7 +547,7 @@ public class MainActivity extends AppCompatActivity
             //这里很简单就加了一个TextView，根据需求可以加载复杂的View
             View view = View.inflate(this, R.layout.custom_view, null);
             TextView textView = ((TextView) view.findViewById(R.id.title1));
-            textView.setText(title);
+            textView.setText(shopinfo[index].companyName);
             BitmapDescriptor markerIcon = BitmapDescriptorFactory.fromView(view);
             markerOptions.position(position).icon(markerIcon);
             markerOptions.setFlat(true);//设置marker平贴地图效果
@@ -559,13 +561,22 @@ public class MainActivity extends AppCompatActivity
             aMap.addMarker(markerOptions);
             aMap.addMarker(markerOptions).setAnimation(animation);
             aMap.addMarker(markerOptions).startAnimation();
+            aMap.setOnMarkerClickListener(new AMap.OnMarkerClickListener() {
+
+                @Override
+                public boolean onMarkerClick(Marker marker) {
+                    Toast.makeText(MainActivity.this, "onMarkerClick", Toast.LENGTH_SHORT).show();
+                    transDataToShopDetails(shopinfo[index].shopDesc);
+                    return true;
+                }
+            });
         }
     }
 
-    private void showDataOnMap(LatLng location,String shopName)
+    private void showDataOnMap(LatLng location, int index)
     {
         //centerLatLng = new LatLng(30.221750,104.242985);
-        addMarker(location, shopName);
+        addMarker(location, index);
         aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location,13));
     }
 }

@@ -25,6 +25,17 @@ public class ShopDetails extends AppCompatActivity {
         setContentView(R.layout.activity_shop_details);
         new Thread(new ListenBuyButton()).start();
 
+        /*获取Intent中的Bundle对象*/
+        Bundle bundle = this.getIntent().getExtras();
+
+        /*获取Bundle中的数据，注意类型和key*/
+        String shopDescp = bundle.getString("shopDesc");
+
+        if(shopDescp!="")
+        {
+            uri = shopDescp.toString();
+        }
+
         webView = (WebView)this.findViewById(R.id.webview);
 
         webView.setWebChromeClient(new WebChromeClient(){
