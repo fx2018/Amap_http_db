@@ -1,5 +1,7 @@
 package amap.android_multiple_infowindows;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.net.http.SslError;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,6 +20,10 @@ public class ShopDetails extends AppCompatActivity {
 
     WebView webView;
     String uri = "http://player.bilibili.com/player.html?aid=542806233&bvid=BV1Xi4y1L76s&cid=257770318";
+    //<iframe src="//player.bilibili.com/player.html?aid=543067851&bvid=BV18i4y1572g&cid=262686005&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+    //String uri = "https://www.bilibili.com/video/BV1oZ4y1n7vc";
+    String time_1 = "t=58";
+    String uri_real = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,12 +58,27 @@ public class ShopDetails extends AppCompatActivity {
         });
 
         webView.setWebViewClient(new WebViewClient(){
-            @Override
+
+           @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 //重写此方法表明点击网页里面的链接还是在当前的webview里跳转，不跳到浏览器那边
                 view.loadUrl(url);
                 return true;
             }
+
+/*
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if(url.startsWith("http:") || url.startsWith("https:") ) {
+                    view.loadUrl(url);
+                    return false;
+                }else{
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    startActivity(intent);
+                    return true;
+                }
+            }
+*/
 
             @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, android.net.http.SslError error) {
@@ -115,10 +136,14 @@ public class ShopDetails extends AppCompatActivity {
         @Override
         public void run() {
 
-            Button btnSubmit = (Button) findViewById(R.id.button_buy);
-            btnSubmit.setOnClickListener(new View.OnClickListener(){
+            Button btnBuy = (Button) findViewById(R.id.button_buy);
+            btnBuy.setOnClickListener(new View.OnClickListener(){
                 @Override
                 public void onClick(View v) {
+                    uri_real = uri;
+                    loadURI(uri_real);
+                    webView.reload();
+                    btnBuy.setText("Buy");
                     submitDataToMeiTuan(getUserName(),getShopID(),getItemName(),getUserAddr());
                     if(!callAliPay())
                     {

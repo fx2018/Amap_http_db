@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.util.Xml;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.EditText;
@@ -54,6 +55,9 @@ import com.amap.api.services.core.PoiItem;
 import com.amap.api.services.poisearch.PoiResult;
 import com.amap.api.services.poisearch.PoiSearch;
 
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+
 import overlay.PoiOverlay;
 
 
@@ -91,8 +95,9 @@ public class MainActivity extends AppCompatActivity
     private LatLng centerLatLng = null;
     private TextView textview_mine = null;
 
-    public static final String URL = "http://192.168.43.75:8080/ServLetTest/";
-    public static final String URL_getShopInfo = URL + "getShopInfo";
+    //public static final String URL = "http://192.168.43.75:8080/ServLetTest/";
+    public static final String URL = "http://us-or-aws.sakurafrp.com:35001/Service.asmx";
+    public static final String URL_getShopInfo = URL + "?op=getCustomerFromParams";
 
     public ShopInfo[] shopinfo;
     // 当前的坐标点集合，主要用于进行地图的可视区域的缩放
@@ -217,6 +222,8 @@ public class MainActivity extends AppCompatActivity
     /*
     =========================================HTTP method=========================================
      */
+    /*
+    //HTTP POST GET method
     public class MyAsyncTask extends AsyncTask<String, Integer, String> {
         private String tv;
 
@@ -265,6 +272,79 @@ public class MainActivity extends AppCompatActivity
             mHandler.obtainMessage(MSG_SUCCESS,s).sendToTarget();
             if(s.contains("code:200"))
             {
+                Intent intent = new Intent();
+                ComponentName cn = new ComponentName("amap.android_multiple_infowindows", "amap.android_multiple_infowindows.MainActivity");
+                //param1:Activity所在应用的包名
+                //param2:Activity的包名+类名
+                intent.setComponent(cn);
+                startActivity(intent);
+            }
+        }
+    }
+    */
+
+    //xmlwebservice method
+    public class MyAsyncTask extends AsyncTask<String, Integer, String> {
+        private String tv;
+
+        public MyAsyncTask(String v) {
+            tv = v;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            Log.w("feifei", "task onPreExecute()");
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            Log.w("WangJ", "task doInBackground()");
+            HttpURLConnection connection = null;
+            StringBuilder response = new StringBuilder();
+            try {
+                java.net.URL url = new URL(params[0]); // 声明一个URL,注意如果用百度首页实验，请使用https开头，否则获取不到返回报文
+                connection = (HttpURLConnection) url.openConnection(); // 打开该URL连接
+                connection.setRequestMethod("GET"); // 设置请求方法，“POST或GET”，我们这里用GET，在说到POST的时候再用POST
+                connection.setConnectTimeout(80000); // 设置连接建立的超时时间
+                connection.setReadTimeout(80000); // 设置网络报文收发超时时间
+                connection.setDoOutput(true);
+                if(connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                    XmlPullParser pullParser = Xml.newPullParser();
+                    pullParser.setInput(connection.getInputStream(), "UTF-8");
+                    int event = pullParser.getEventType();
+                    while (event != XmlPullParser.END_DOCUMENT) {
+                        switch (event) {
+                            case XmlPullParser.START_TAG:
+                                if ("Customer".equals(pullParser.getName())) {
+                                    response.append(pullParser.nextText()+",");
+                                }
+                                break;
+                        }
+                        response.append(";");
+                    }
+                }
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (XmlPullParserException e) {
+                e.printStackTrace();
+            }
+            return response.toString(); // 这里返回的结果就作为onPostExecute方法的入参
+        }
+
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            // 如果在doInBackground方法，那么就会立刻执行本方法
+            // 本方法在UI线程中执行，可以更新UI元素，典型的就是更新进度条进度，一般是在下载时候使用
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            mHandler.obtainMessage(MSG_SUCCESS, s).sendToTarget();
+            if (s.contains("code:200")) {
                 Intent intent = new Intent();
                 ComponentName cn = new ComponentName("amap.android_multiple_infowindows", "amap.android_multiple_infowindows.MainActivity");
                 //param1:Activity所在应用的包名

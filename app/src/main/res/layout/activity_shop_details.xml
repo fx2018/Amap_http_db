@@ -34,14 +34,14 @@
                 android:id="@+id/textView2"
                 android:layout_width="270dp"
                 android:layout_height="wrap_content"
-                android:text="      豆腐皮"
+                android:text="     糍粑冰粉"
                 android:textAppearance="@style/TextAppearance.AppCompat.Body1" />
 
             <Button
                 android:id="@+id/button_buy"
                 android:layout_width="75dp"
                 android:layout_height="wrap_content"
-                android:text="Buy" />
+                android:text="Jump" />
 
         </LinearLayout>
 
